@@ -100,8 +100,25 @@ test('buildPlate closes the protein gap inside the budget with one side', () => 
     { calBudget: 600, proteinGap: 50 },
   );
   assert.deepEqual(plate.map((p) => p.item.name), ['Chicken', 'Tuna', 'Brown rice']);
+  assert.deepEqual(plate.map((p) => p.servings), [1, 1, 1]);
   assert.equal(cal, 450);
   assert.equal(protein, 57);
+});
+
+test('buildPlate doubles up small portions instead of piling on dishes', () => {
+  const c = (category, name, cal, protein, carbs = 0, fiber = 0) => ({ category, item: { name, cal, protein, carbs, fiber } });
+  const { plate, cal, protein } = buildPlate(
+    [
+      c('Grill', 'Chicken thigh', 82, 13),
+      c('Mediterranean', 'Chicken legs', 101, 14),
+      c('Tandoor', 'Wings', 135, 18, 2),
+      c('Salad', 'Chickpea salad', 210, 8, 30, 7),
+    ],
+    { calBudget: 700, proteinGap: 55 },
+  );
+  assert.deepEqual(plate.map((p) => [p.item.name, p.servings]), [['Chicken thigh', 2], ['Chicken legs', 2], ['Chickpea salad', 1]]);
+  assert.equal(protein, 62);
+  assert.equal(cal, 576);
 });
 
 test('date helpers', () => {

@@ -190,38 +190,49 @@ export function bestProteinPicks(items, { calLeft = Infinity, limit = 3, minProt
 const SWEET_STATIONS = /dessert|bakery|sweet|pastr|ice cream|cereal|beverage|drink|condiment|topping/i;
 
 /**
- * Greedy "build my plate": protein anchors from different stations until the
- * protein gap closes, then one fiber-friendly (non-dessert) side, all inside the calorie budget.
- * candidates: [{ item, category }]
+ * Greedy "build my plate": up to two protein anchors from different stations
+ * (doubling up servings when dining-hall portions are small), then one
+ * fiber-friendly non-dessert side, all inside the calorie budget.
+ * candidates: [{ item, category }] -> { plate: [{ item, category, servings }], cal, protein }
  */
-export function buildPlate(candidates, { calBudget, proteinGap, maxItems = 4 }) {
+export function buildPlate(candidates, { calBudget, proteinGap, maxItems = 4, maxServings = 2 }) {
   const usable = candidates.filter(({ item }) => (item.cal ?? 0) >= 40 && item.protein != null);
   const plate = [];
-  const usedCats = new Set();
   let cal = 0;
   let protein = 0;
-  const fits = (c) => !usedCats.has(c.category) && cal + c.item.cal <= calBudget;
+  const fitsCal = (c, n = 1) => cal + c.item.cal * n <= calBudget;
   const take = (c) => {
-    plate.push(c);
-    usedCats.add(c.category);
+    plate.push({ ...c, servings: 1 });
     cal += c.item.cal;
     protein += c.item.protein;
   };
+  const density = (c) => c.item.protein / c.item.cal;
 
-  const anchors = usable
-    .filter((c) => c.item.protein >= 10)
-    .sort((a, b) => b.item.protein / b.item.cal - a.item.protein / a.item.cal);
-  for (const c of anchors) {
-    if (plate.length >= maxItems - 1 || protein >= proteinGap) break;
-    if (fits(c)) take(c);
+  const anchors = usable.filter((c) => c.item.protein >= 10).sort((a, b) => density(b) - density(a));
+  const addAnchor = () => {
+    const c = anchors.find((a) => !plate.some((p) => p.category === a.category) && fitsCal(a));
+    if (c) take(c);
+    return !!c;
+  };
+  while (plate.length < 2 && protein < proteinGap && addAnchor());
+
+  // Small portions: add servings of the best anchors before reaching for more dishes.
+  while (protein < proteinGap) {
+    const p = [...plate].sort((a, b) => density(b) - density(a)).find((x) => x.servings < maxServings && fitsCal(x));
+    if (!p) break;
+    p.servings++;
+    cal += p.item.cal;
+    protein += p.item.protein;
   }
+  // A third protein dish only if we're still well short.
+  if (protein < proteinGap - 8 && plate.length < maxItems - 1) addAnchor();
 
   const sweet = (c) =>
     SWEET_STATIONS.test(c.category) || (c.item.sugar != null && c.item.sugar >= (c.item.carbs ?? 0) * 0.4);
-  const sides = usable
-    .filter((c) => !plate.includes(c) && cal + c.item.cal <= calBudget && (c.item.carbs ?? 0) >= 10 && !sweet(c))
-    .sort((a, b) => ((b.item.fiber ?? 0) + 1) / b.item.cal - ((a.item.fiber ?? 0) + 1) / a.item.cal);
-  if (sides.length && plate.length < maxItems) take(sides[0]);
+  const side = usable
+    .filter((c) => !plate.some((p) => p.item === c.item) && fitsCal(c) && (c.item.carbs ?? 0) >= 10 && !sweet(c))
+    .sort((a, b) => ((b.item.fiber ?? 0) + 1) / b.item.cal - ((a.item.fiber ?? 0) + 1) / a.item.cal)[0];
+  if (side && plate.length < maxItems) take(side);
 
-  return { plate, cal, protein };
+  return { plate, cal: Math.round(cal), protein: Math.round(protein) };
 }

@@ -15,6 +15,7 @@ const view = {
   q: '',
   sort: 'menu',
   filters: new Set(),
+  openCats: new Set(), // stations you've expanded (hall|meal|station)
   plate: null,
   refreshing: null, // progress text while a GitHub refresh runs
 };
@@ -170,6 +171,8 @@ function itemRow(it, i, cat, showCat) {
   </div></li>`;
 }
 
+const catKey = (name) => `${view.hall}|${view.meal}|${name}`;
+
 function renderMenu(el, day) {
   const cats = day?.halls?.[view.hall]?.[view.meal] || [];
   const all = cats.flatMap((c) => c.items.map((it) => ({ it, cat: c.name })));
@@ -204,7 +207,7 @@ function renderMenu(el, day) {
       const calLeft = t.calories - tot.cal;
       const pLeft = t.protein - tot.protein;
       const calBudget = Math.max(250, Math.min(calLeft, t.calories * 0.4));
-      const proteinGap = Math.max(20, Math.min(pLeft, t.protein * 0.45));
+      const proteinGap = Math.max(20, Math.min(pLeft, t.protein * 0.35)); // ≈ a third of the day
       view.plate = {
         ...buildPlate(all.map((x) => ({ item: x.it, category: x.cat })), { calBudget, proteinGap }),
         calBudget,
@@ -218,7 +221,7 @@ function renderMenu(el, day) {
     });
     slot.querySelector('[data-plate-all]')?.addEventListener('click', () => {
       const date = view.date;
-      const added = view.plate.plate.map((p) => quickLog({ it: p.item, cat: p.category }, logMeal, true));
+      const added = view.plate.plate.map((p) => quickLog({ it: p.item, cat: p.category }, logMeal, { silent: true, servings: p.servings }));
       view.plate = null;
       renderPlate();
       toast(`Added ${added.length} items`, { label: 'Undo', onClick: () => added.forEach((e) => removeEntry(date, e.id)) });
@@ -246,7 +249,8 @@ function renderMenu(el, day) {
     } else if (view.sort !== 'menu') {
       const key = {
         protein: (x) => -(x.it.protein ?? -1),
-        density: (x) => ((x.it.cal ?? 0) < 20 ? 1 : -((x.it.protein ?? 0) / x.it.cal)),
+        // Protein sources first: items under 5g protein (veggies, sauces) sink to the bottom.
+        density: (x) => ((x.it.cal ?? 0) < 20 || (x.it.protein ?? 0) < 5 ? 1 : -(x.it.protein / x.it.cal)),
         lowcal: (x) => x.it.cal ?? 1e9,
       }[view.sort];
       const sorted = [...shown].sort((a, b) => key(a) - key(b));
@@ -256,7 +260,7 @@ function renderMenu(el, day) {
       const openAll = q || view.filters.size || groups.length <= 6;
       listHtml = groups
         .map(
-          (gr) => `<details class="card cat" ${openAll ? 'open' : ''}>
+          (gr) => `<details class="card cat" data-cat="${esc(gr.c.name)}" ${openAll ? 'data-auto open' : view.openCats.has(catKey(gr.c.name)) ? 'open' : ''}>
             <summary><span>${esc(gr.c.name)}</span><span class="count">${gr.rows.length} ${icon('chevronDown')}</span></summary>
             <ul class="list">${gr.rows.map((x) => itemRow(x.it, all.indexOf(x), x.cat, false)).join('')}</ul>
           </details>`,
@@ -265,6 +269,13 @@ function renderMenu(el, day) {
     }
     const list = el.querySelector('[data-list]');
     list.innerHTML = `<p class="small muted" style="margin:0 4px 10px">Adding to <b>${esc(logMealLabel(logMeal))}</b> · ${esc(relativeDayLabel(view.date))} · ${shown.length} items</p>${listHtml}`;
+    // Remember stations you open yourself (not ones auto-expanded by search/filters).
+    list.querySelectorAll('details[data-cat]:not([data-auto])').forEach((d) =>
+      d.addEventListener('toggle', () => {
+        const k = catKey(d.dataset.cat);
+        d.open ? view.openCats.add(k) : view.openCats.delete(k);
+      }),
+    );
     list.querySelectorAll('[data-item]').forEach((b) =>
       b.addEventListener('click', () => {
         const x = all[Number(b.dataset.item)];
@@ -300,7 +311,7 @@ function renderMenu(el, day) {
   mountedList = { el, render: renderList };
 }
 
-function quickLog(x, logMeal, silent = false) {
+function quickLog(x, logMeal, { silent = false, servings = 1 } = {}) {
   const { it, cat } = x;
   const n = {};
   for (const k of ['cal', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sodium', 'satFat', 'chol']) if (it[k] != null) n[k] = it[k];
@@ -308,7 +319,7 @@ function quickLog(x, logMeal, silent = false) {
     meal: logMeal,
     name: it.name,
     serving: it.serving,
-    servings: 1,
+    servings,
     n,
     source: 'menu',
     hall: view.hall,
@@ -339,8 +350,8 @@ function plateCard(plate) {
     </div>
     <ul class="list">${plate.plate
       .map((p, i) => `<li><button class="item compact" data-plate-item="${i}">
-        <div class="main"><div class="title">${esc(p.item.name)}</div><div class="meta">${esc(p.category)} · ${pcf(p.item)}</div></div>
-        <div class="kcal"><b>${fmt(p.item.cal)}</b><span>kcal</span></div></button></li>`)
+        <div class="main"><div class="title">${p.servings > 1 ? `${p.servings}× ` : ''}${esc(p.item.name)}</div><div class="meta">${esc(p.category)}${p.item.serving ? ` · ${esc(p.item.serving)}` : ''} · ${pcf(p.item, p.servings)}</div></div>
+        <div class="kcal"><b>${fmt(p.item.cal * p.servings)}</b><span>kcal</span></div></button></li>`)
       .join('')}</ul>
     <button class="btn block" data-plate-all style="margin-top:8px">Add all ${plate.plate.length}</button>
   </section>`;
