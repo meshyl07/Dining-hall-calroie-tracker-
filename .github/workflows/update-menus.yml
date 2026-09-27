@@ -1,0 +1,94 @@
+name: Update menus & deploy
+
+# Pulls every published menu (today → as far ahead as UMass has posted) for
+# Worcester, Berkshire, Franklin and Hampshire, commits the data, and publishes
+# the site to GitHub Pages.
+#
+# Runs automatically twice a day, on every push, and on demand: the app's
+# Refresh button (or "Run workflow" on the Actions tab) triggers workflow_dispatch.
+
+on:
+  schedule:
+    # UTC. ≈ 6:17 AM and 4:17 PM Eastern (5:17 / 3:17 during standard time).
+    - cron: '17 10,20 * * *'
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - '**.md'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: update-menus
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      scrape: ${{ steps.scrape.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run tests
+        run: npm test
+
+      # Pushes to other branches only run the tests.
+      - name: Fetch menus from UMass Dining
+        id: scrape
+        if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+        continue-on-error: true
+        run: node scripts/scrape-menus.mjs
+
+      - name: Commit updated menu data
+        if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+        run: |
+          git add site/data
+          if git diff --cached --quiet; then
+            echo "Menu data unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Update dining hall menus ($(TZ=America/New_York date +'%a %b %-d, %-I:%M %p ET'))"
+          for attempt in 1 2 3; do
+            git pull --rebase origin "$GITHUB_REF_NAME" && git push origin "HEAD:$GITHUB_REF_NAME" && exit 0
+            sleep $((attempt * 5))
+          done
+          echo "Could not push menu data." && exit 1
+
+      - name: Package site
+        if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    # Pages only deploys from the default branch.
+    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  # Makes a failed menu fetch show up as a failed run (and a GitHub email),
+  # after the site has still been deployed with the previous data.
+  check-menus:
+    needs: [build, deploy]
+    if: always() && needs.build.result == 'success' && needs.build.outputs.scrape == 'failure'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "::error::Fetching menus from umassdining.com failed. The site kept the previous menu data. Check the 'Fetch menus' step log."
+          exit 1

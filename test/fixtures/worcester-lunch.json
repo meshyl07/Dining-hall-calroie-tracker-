@@ -1,0 +1,13 @@
+{
+  "breakfast_menu": [],
+  "lunch_menu": {
+    "Grill Station": "<li class=\"lightbox-nutrition\"><a href=\"#inline\" data-dish-name=\"Grilled Chicken Breast\" data-recipe-webcode=\"100201\" data-serving-size=\"4 oz\" data-calories=\"160\" data-calories-from-fat=\"30\" data-total-fat=\"3.5g\" data-total-fat-dv=\"5\" data-sat-fat=\"1g\" data-trans-fat=\"0g\" data-cholesterol=\"85mg\" data-sodium=\"370mg\" data-total-carb=\"0g\" data-dietary-fiber=\"0g\" data-sugars=\"0g\" data-protein=\"31g\" data-allergens=\"\" data-ingredient-list=\"Chicken breast, spices (paprika > 2%), salt\" data-clean-diet-str=\"Halal, Local\">Grilled Chicken Breast</a></li><li class=\"lightbox-nutrition\"><a href=\"#inline\" data-dish-name=\"Mac &amp; Cheese\" data-serving-size=\"1 cup\" data-calories=\"420\" data-total-fat=\"19g\" data-sat-fat=\"11g\" data-total-carb=\"44g\" data-dietary-fiber=\"&lt;1g\" data-sugars=\"6g\" data-protein=\"17g\" data-sodium=\"890mg\" data-allergens=\"Milk, Wheat\" data-clean-diet-str=\"Vegetarian\">Mac &amp; Cheese</a></li>",
+    "World Fusion": "<li class=\"lightbox-nutrition\"><a href=\"#inline\" data-dish-name=\"Tofu &#038; Broccoli Stir Fry\" data-serving-size=\"1 cup\" data-calories=\"210\" data-total-fat=\"9g\" data-total-carb=\"18g\" data-dietary-fiber=\"4g\" data-sugars=\"5g\" data-protein=\"14g\" data-allergens=\"Soy\" data-clean-diet-str=\"Vegan, Plant Based\">Tofu &amp; Broccoli Stir Fry</a></li><li class=\"lightbox-nutrition\"><a href=\"#inline\" data-dish-name=\"Brown Rice\" data-serving-size=\"1/2 cup\" data-calories=\"110\" data-total-fat=\"1g\" data-total-carb=\"23g\" data-dietary-fiber=\"2g\" data-protein=\"2g\" data-clean-diet-str=\"Vegan\">Brown Rice</a></li><li class=\"lightbox-nutrition\"><a href=\"#inline\" data-dish-name=\"Brown Rice\" data-calories=\"110\">Brown Rice</a></li>"
+  },
+  "dinner_menu": {
+    "Pizza": "<li class='lightbox-nutrition'><a href='#inline' data-dish-name='Cheese Pizza' data-serving-size='1 slice' data-calories='290' data-total-fat='11g' data-total-carb='35g' data-protein='13g' data-allergens='Milk, Wheat'>Cheese Pizza</a></li>"
+  },
+  "latenight_menu": {
+    "Desserts": "<li class=\"lightbox-nutrition\"><a href=\"#inline\" data-dish-name=\"Soft Serve\" data-serving-size=\"1/2 cup\" data-calories=\"\" data-total-fat=\"\" data-protein=\"N/A\">Soft Serve</a></li>"
+  }
+}
