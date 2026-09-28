@@ -30,8 +30,23 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       scrape: ${{ steps.scrape.outcome }}
+      pages: ${{ steps.pages.outputs.enabled }}
     steps:
       - uses: actions/checkout@v4
+
+      # With Pages off you can still use the single-file version; skip the deploy
+      # instead of failing (and emailing you) on every run.
+      - name: Check whether GitHub Pages is on
+        id: pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/$GITHUB_REPOSITORY/pages" >/dev/null 2>&1; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::GitHub Pages is off, so only the single-file version is updated. To get the web/phone version: Settings → Pages → Source: GitHub Actions."
+          fi
 
       - uses: actions/setup-node@v4
         with:
@@ -93,7 +108,7 @@ jobs:
   deploy:
     needs: build
     # Pages only deploys from the default branch.
-    if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+    if: needs.build.outputs.pages == 'true' && (github.event_name != 'push' || github.ref_name == github.event.repository.default_branch)
     runs-on: ubuntu-latest
     environment:
       name: github-pages
