@@ -27,7 +27,16 @@ So when UMass publishes the next weeks, the app picks them up on its own within 
 - **Without a token:** it reloads the latest data and links you to *Actions → Run workflow* on GitHub, if you want to force an update now.
 - **With a token (one tap):** go to *Goals → Menu updates → Set up* and paste a [fine-grained token](https://github.com/settings/personal-access-tokens/new) limited to this repo with only **Actions: Read and write**. Refresh then runs the job and waits for it (about 1–2 min).
 
-## One-time setup (~3 minutes)
+## Use it locally: one file, no setup
+
+Download **[calorie-tracker.html](https://github.com/meshyl07/Dining-hall-calroie-tracker-/releases/download/local-app/calorie-tracker.html)** (from Releases → *local-app*) and double-click it. It opens in your browser: no install, no server, no GitHub Pages.
+
+- It carries a copy of the menus from when it was built. Whenever you're online, it loads the latest menus from this repo (which the Action updates twice a day), so you rarely need to re-download it. Only re-download to get app updates.
+- Your log is saved in that browser. Keep the file in one place (e.g. Documents), and if you download a newer copy, replace the old file rather than keeping both. Use **Goals → Export/Import** to move your data.
+- This is best on a laptop. Phones don't run downloaded HTML files well, so use the GitHub Pages link on your phone.
+- To build it yourself: `npm run build:local` → `dist/calorie-tracker.html`.
+
+## One-time setup for the phone / web version (~3 minutes)
 
 1. **Enable GitHub Pages:** repo **Settings → Pages → Build and deployment → Source: GitHub Actions**.
 2. **Make this the default branch**, if it isn't already (**Settings → General → Default branch**). Scheduled runs and Pages deploys only happen on the default branch.
@@ -56,6 +65,7 @@ No build step or dependencies; just Node 20+ and a browser.
 npm test                 # unit tests (parser, scraper pipeline, goal math)
 npm run scrape           # fetch menus into site/data (needs internet access to umassdining.com)
 npm run serve            # http://localhost:8080
+npm run build:local      # one-file app → dist/calorie-tracker.html
 ```
 
 | Path | What |
@@ -65,5 +75,6 @@ npm run serve            # http://localhost:8080
 | `site/js/halls.js` | Dining hall list (UMass location ids) and meal names |
 | `scripts/lib/umass.mjs` | Fetches and parses UMass Dining menu responses |
 | `scripts/lib/pipeline.mjs` | Scrape → merge → write `site/data/index.json` + `site/data/days/*.json` |
+| `scripts/build-local.mjs` | Bundles the app + a menu snapshot into one `calorie-tracker.html` |
 
 Not affiliated with UMass Amherst or Bevel.

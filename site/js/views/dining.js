@@ -62,12 +62,12 @@ export function statusBar() {
     sub = cov.error
       ? 'Couldn’t reach the site. Are you offline?'
       : cov.checkedAt
-        ? `Last check ${timeAgo(cov.checkedAt)}${cov.lastCheckFailed ? ' failed' : ' found nothing posted'}. Tap refresh.`
+        ? `${cov.checkedLabel} ${timeAgo(cov.checkedAt)}${cov.lastCheckFailed ? ' (last check failed)' : ''}. Tap refresh.`
         : 'The update job hasn’t run yet. Tap refresh.';
   } else {
     const endTxt = fmtDate(cov.end, { weekday: 'short', month: 'short', day: 'numeric' });
     title = cov.state === 'stale' ? `${hallName} menus ended ${endTxt}` : `${hallName} menus through ${endTxt}`;
-    sub = `Checked ${timeAgo(cov.checkedAt)}${cov.lastCheckFailed ? ' · last check failed' : ''}`;
+    sub = `${cov.checkedLabel} ${timeAgo(cov.checkedAt)}${cov.lastCheckFailed ? ' · last check failed' : ''}`;
     if (cov.state === 'stale' || cov.lastCheckFailed) cls = 'bad';
     else if (cov.state === 'ending') cls = 'warn';
   }

@@ -17,7 +17,7 @@ on:
       - '**.md'
 
 permissions:
-  contents: write
+  contents: write # commit menu data + upload the local-app release file
   pages: write
   id-token: write
 
@@ -69,6 +69,26 @@ jobs:
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
+
+      # One-file copy of the app for opening locally (no server needed), published at
+      # https://github.com/<owner>/<repo>/releases/download/local-app/calorie-tracker.html
+      - name: Build single-file local version
+        id: local
+        if: github.event_name != 'push' || github.ref_name == github.event.repository.default_branch
+        continue-on-error: true
+        run: node scripts/build-local.mjs --out=dist/calorie-tracker.html
+
+      - name: Publish local version to the "local-app" release
+        if: (github.event_name != 'push' || github.ref_name == github.event.repository.default_branch) && steps.local.outcome == 'success'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view local-app >/dev/null 2>&1; then
+            gh release create local-app --target "$GITHUB_SHA" --title "Calorie tracker (single-file version)" \
+              --notes "Download calorie-tracker.html and open it in your browser. No install or server needed. It includes the current menus and loads newer ones from this repo whenever you're online. Re-uploaded automatically with every update."
+          fi
+          gh release upload local-app dist/calorie-tracker.html --clobber
 
   deploy:
     needs: build

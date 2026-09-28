@@ -2,3 +2,4 @@ node_modules/
 .DS_Store
 # Written by every scrape run and shipped with the deployed site, but not committed
 site/data/status.json
+dist/

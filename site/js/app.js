@@ -108,6 +108,6 @@ render();
 loadIndex();
 requestPersistence();
 
-if ('serviceWorker' in navigator && !new URLSearchParams(location.search).has('nosw')) {
+if ('serviceWorker' in navigator && location.protocol !== 'file:' && !new URLSearchParams(location.search).has('nosw')) {
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }

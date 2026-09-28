@@ -146,7 +146,7 @@ export function renderYou(root, ctx) {
     <div class="section-label">Menu updates</div>
     <section class="card">
       <div class="kv"><span>Menus available through</span><span>${cov.end ? esc(fmtDate(cov.end)) : '—'}</span></div>
-      <div class="kv"><span>Last checked UMass Dining</span><span>${cov.checkedAt ? esc(timeAgo(cov.checkedAt)) : '—'}</span></div>
+      <div class="kv"><span>${cov.checkedLabel === 'Checked' ? 'Last checked UMass Dining' : 'Menus last updated'}</span><span>${cov.checkedAt ? esc(timeAgo(cov.checkedAt)) : '—'}</span></div>
       <div class="kv"><span>Automatic checks</span><span>Twice a day</span></div>
       <div class="kv"><span>One-tap refresh</span><span>${s.prefs.ghToken ? 'On' : 'Off'}</span></div>
       <div class="row" style="margin-top:12px">

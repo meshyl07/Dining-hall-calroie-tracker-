@@ -15,8 +15,18 @@ const listeners = new Set();
 export const onMenusChange = (fn) => (listeners.add(fn), () => listeners.delete(fn));
 const emit = () => listeners.forEach((fn) => fn());
 
-async function getJson(path, query = '') {
-  const url = new URL(`data/${path}`, document.baseURI);
+// The single-file local build (scripts/build-local.mjs) embeds a snapshot of the
+// menus and, when online, pulls fresher ones straight from the GitHub repo.
+const EMBEDDED = globalThis.__EMBEDDED_MENUS__ || null; // { index, days }
+let source = null; // 'site' | 'embedded' | 'remote'
+let dataBase = null;
+
+export const isLocalBuild = () => !!EMBEDDED;
+const siteBase = () => new URL('data/', document.baseURI);
+const remoteBase = (repo) => `https://raw.githubusercontent.com/${repo}/HEAD/site/data/`;
+
+async function getJson(base, path, query = '') {
+  const url = new URL(path, base);
   if (query) url.search = query;
   const res = await fetch(url, { cache: 'no-cache' });
   if (res.status === 404) return null;
@@ -24,14 +34,33 @@ async function getJson(path, query = '') {
   return res.json();
 }
 
+function useIndex(idx, st, src, base) {
+  if (index && (idx.updatedAt !== index.updatedAt || src !== source)) dayCache.clear();
+  index = idx;
+  status = st;
+  source = src;
+  dataBase = base;
+}
+
 export async function loadIndex({ force = false } = {}) {
   if (!force && index && Date.now() - loadedAt < 30 * 60e3) return index;
+  const t = `t=${Date.now()}`;
   try {
-    const t = `t=${Date.now()}`;
-    const [idx, st] = await Promise.all([getJson('index.json', t), getJson('status.json', t).catch(() => null)]);
-    if (idx && index && idx.updatedAt !== index.updatedAt) dayCache.clear();
-    index = idx;
-    status = st;
+    if (EMBEDDED) {
+      if (!index) useIndex(EMBEDDED.index, null, 'embedded', null);
+      const repo = EMBEDDED.index?.repo;
+      const base = repo && remoteBase(repo);
+      const idx = base ? await getJson(base, 'index.json', t).catch(() => null) : null;
+      // Offline (or GitHub unreachable): keep whatever we already have.
+      if (idx?.end && (idx.updatedAt || '') >= (EMBEDDED.index.updatedAt || '')) {
+        useIndex(idx, null, 'remote', base); // status.json isn't committed, so there's none to fetch
+      }
+    } else {
+      const base = siteBase();
+      const [idx, st] = await Promise.all([getJson(base, 'index.json', t), getJson(base, 'status.json', t).catch(() => null)]);
+      if (idx) useIndex(idx, st, 'site', base);
+      else index = null;
+    }
     loadError = null;
   } catch (err) {
     loadError = err;
@@ -48,10 +77,15 @@ export const lastLoadedAt = () => loadedAt;
 export function loadDay(date) {
   if (!index?.days?.[date]) return Promise.resolve(null);
   if (!dayCache.has(date)) {
-    const p = getJson(`days/${date}.json`, `v=${encodeURIComponent(index.updatedAt || '')}`).catch((err) => {
-      dayCache.delete(date);
-      throw err;
-    });
+    const snapshot = EMBEDDED?.days?.[date] || null;
+    const p =
+      source === 'embedded'
+        ? Promise.resolve(snapshot)
+        : getJson(dataBase, `days/${date}.json`, `v=${encodeURIComponent(index.updatedAt || '')}`).catch((err) => {
+            if (snapshot) return snapshot;
+            dayCache.delete(date);
+            throw err;
+          });
     dayCache.set(date, p);
   }
   return dayCache.get(date);
@@ -73,14 +107,17 @@ export function coverage(hallId = DEFAULT_HALL) {
   if (!index) return { state: loadedAt ? 'none' : 'loading', error: loadError };
   const today = todayIso();
   const end = index.hallEnd?.[hallId] || index.end;
+  // status.json (written on every check) only ships with the Pages site; otherwise
+  // all we know is when the menus last changed.
   const checkedAt = status?.checkedAt || index.updatedAt;
+  const checkedLabel = status ? 'Checked' : 'Menus updated';
   const lastCheckFailed = status ? !status.ok : false;
-  if (!end) return { state: 'none', checkedAt, lastCheckFailed };
+  if (!end) return { state: 'none', checkedAt, checkedLabel, lastCheckFailed };
   const daysLeft = daysBetween(today, end);
   let state = 'ok';
   if (daysLeft < 0) state = 'stale';
   else if (daysLeft <= 2) state = 'ending';
-  return { state, end, daysLeft, checkedAt, updatedAt: index.updatedAt, lastCheckFailed };
+  return { state, end, daysLeft, checkedAt, checkedLabel, updatedAt: index.updatedAt, lastCheckFailed };
 }
 
 // ---------------------------------------------------------------- GitHub

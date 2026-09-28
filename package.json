@@ -10,6 +10,7 @@
   "scripts": {
     "scrape": "node scripts/scrape-menus.mjs",
     "serve": "node scripts/serve.mjs",
+    "build:local": "node scripts/build-local.mjs",
     "test": "node --test test/*.test.mjs"
   }
 }
