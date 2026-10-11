@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-10T23:35:40.928Z",
+ "updatedAt": "2026-10-11T16:20:25.911Z",
  "source": "https://umassdining.com/menu-search",
  "repo": "meshyl07/Dining-hall-calroie-tracker-",
  "branch": "claude/umass-dining-calorie-tracker-swte2b",
@@ -23,12 +23,12 @@
   }
  ],
  "start": "2026-09-27",
- "end": "2026-10-24",
+ "end": "2026-10-25",
  "hallEnd": {
-  "berkshire": "2026-10-24",
-  "franklin": "2026-10-24",
-  "hampshire": "2026-10-24",
-  "worcester": "2026-10-24"
+  "berkshire": "2026-10-25",
+  "franklin": "2026-10-25",
+  "hampshire": "2026-10-25",
+  "worcester": "2026-10-25"
  },
  "days": {
   "2026-09-27": {
@@ -716,6 +716,27 @@
    ]
   },
   "2026-10-24": {
+   "berkshire": [
+    "lunch",
+    "dinner",
+    "latenight"
+   ],
+   "franklin": [
+    "lunch",
+    "dinner"
+   ],
+   "hampshire": [
+    "lunch",
+    "dinner"
+   ],
+   "worcester": [
+    "breakfast",
+    "lunch",
+    "dinner",
+    "latenight"
+   ]
+  },
+  "2026-10-25": {
    "berkshire": [
     "lunch",
     "dinner",
