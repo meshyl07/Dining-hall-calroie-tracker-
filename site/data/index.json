@@ -1,6 +1,6 @@
 {
  "version": 1,
- "updatedAt": "2026-10-22T15:19:37.416Z",
+ "updatedAt": "2026-10-22T23:25:49.737Z",
  "source": "https://umassdining.com/menu-search",
  "repo": "meshyl07/Dining-hall-calroie-tracker-",
  "branch": "claude/umass-dining-calorie-tracker-swte2b",
@@ -704,8 +704,7 @@
     "breakfast",
     "lunch",
     "dinner",
-    "latenight",
-    "grabngo"
+    "latenight"
    ]
   },
   "2026-11-04": {
